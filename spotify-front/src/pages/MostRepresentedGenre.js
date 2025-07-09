@@ -10,6 +10,19 @@ const genreColors = [
   '#4e79a7', '#f28e2b', '#e15759', '#76b7b2', '#59a14f', '#edc949', '#af7aa1', '#ff9da7', '#9c755f', '#bab0ab'
 ];
 
+const defaultGenreData = [
+  { genre: 'Pop', count: 12 },
+  { genre: 'Rock', count: 9 },
+  { genre: 'Hip-Hop', count: 7 },
+  { genre: 'Jazz', count: 5 },
+  { genre: 'Classical', count: 3 },
+  { genre: 'Electronic', count: 2 },
+  { genre: 'R&B', count: 2 },
+  { genre: 'Reggae', count: 1 },
+  { genre: 'Country', count: 1 },
+  { genre: 'Metal', count: 1 }
+];
+
 const MostRepresentedGenre = () => {
   const [genreData, setGenreData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -29,11 +42,11 @@ const MostRepresentedGenre = () => {
   }, []);
 
   const data = {
-    labels: genreData.map(g => g.genre),
+    labels: (genreData.length > 0 ? genreData : defaultGenreData).map(g => g.genre),
     datasets: [
       {
         label: "Nombre d'artistes",
-        data: genreData.map(g => g.count),
+        data: (genreData.length > 0 ? genreData : defaultGenreData).map(g => g.count),
         backgroundColor: genreColors,
       },
     ],
