@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import Playlists from './Playlists'; // Your playlists component
-import { FaSearch, FaMusic } from 'react-icons/fa';
+import VisualizationPage from './VisualizationPage'; // Your visualization component
+import { FaSearch, FaMusic, FaChartBar } from 'react-icons/fa';
 import API from '../api'; // Your API instance
 
-// --- STYLES ---
 const SearchStyles = () => (
   <style>{`
     @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Montserrat:wght@400;700&display=swap');
@@ -182,7 +182,6 @@ const SearchStyles = () => (
       grid-template-columns: repeat(auto-fill,minmax(220px,1fr));
       gap: 25px;
     }
-    /* Buttons for adding favorites */
     .favorite-button {
       margin-left: auto;
       cursor: pointer;
@@ -199,7 +198,7 @@ const SearchStyles = () => (
   `}</style>
 );
 
-export default function SpotifySearch() {
+export default function App() {
   const [activeTab, setActiveTab] = useState('search');
 
   // Search states
@@ -212,13 +211,13 @@ export default function SpotifySearch() {
   const [loading, setLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
 
-  // Playlists and selected playlist id
+  // Playlists & default playlist id for favorites
   const [playlists, setPlaylists] = useState([]);
   const [defaultPlaylistId, setDefaultPlaylistId] = useState(null);
 
   const BACKEND_URL = 'http://127.0.0.1:5000';
 
-  // Fetch playlists on mount and set default playlist id
+  // Fetch playlists on mount & set default playlist
   useEffect(() => {
     const fetchPlaylists = async () => {
       const token = localStorage.getItem('token');
@@ -236,7 +235,7 @@ export default function SpotifySearch() {
     fetchPlaylists();
   }, []);
 
-  // Fetch popular tracks and artists on mount
+  // Fetch popular tracks & artists on mount
   useEffect(() => {
     async function fetchPopular() {
       setLoading(true);
@@ -256,6 +255,7 @@ export default function SpotifySearch() {
     fetchPopular();
   }, []);
 
+  // Search handler
   const handleSearch = async (e) => {
     e.preventDefault();
     if (!query.trim()) return;
@@ -278,6 +278,7 @@ export default function SpotifySearch() {
     setLoading(false);
   };
 
+  // Add favorite artist
   const handleAddFavoriteArtist = async (artistName) => {
     const token = localStorage.getItem('token');
     if (!token) {
@@ -300,6 +301,7 @@ export default function SpotifySearch() {
     }
   };
 
+  // Add favorite track
   const handleAddFavoriteTrack = async (track) => {
     const token = localStorage.getItem('token');
     if (!token) {
@@ -322,6 +324,7 @@ export default function SpotifySearch() {
     }
   };
 
+  // Render search/popular content
   const RenderContent = () => {
     if (loading) return <h2 className="content-heading">Loading...</h2>;
     if (error) return <h2 className="content-heading error-message">Error: {error}</h2>;
@@ -344,15 +347,7 @@ export default function SpotifySearch() {
                       )}
                       <div className="item-name">{artist.name}</div>
                       <button
-                        style={{
-                          marginLeft: 'auto',
-                          cursor: 'pointer',
-                          background: 'none',
-                          border: 'none',
-                          color: 'var(--glow-purple)',
-                          fontSize: '1.2rem',
-                          padding: '0 10px'
-                        }}
+                        className="favorite-button"
                         onClick={() => handleAddFavoriteArtist(artist.name)}
                         title={`Add ${artist.name} to favorites`}
                       >
@@ -375,14 +370,7 @@ export default function SpotifySearch() {
                         )}
                       </div>
                       <button
-                        style={{
-                          cursor: 'pointer',
-                          background: 'none',
-                          border: 'none',
-                          color: 'var(--glow-purple)',
-                          fontSize: '1.2rem',
-                          padding: '0 10px'
-                        }}
+                        className="favorite-button"
                         onClick={() => handleAddFavoriteTrack(track)}
                         title={`Add ${track.name} to favorites`}
                       >
@@ -468,10 +456,18 @@ export default function SpotifySearch() {
           >
             <FaMusic />
           </button>
+          <button
+            className={`sidebar-button ${activeTab === 'visualization' ? 'active' : ''}`}
+            onClick={() => setActiveTab('visualization')}
+            title="Visualization"
+            aria-label="Visualization"
+          >
+            <FaChartBar />
+          </button>
         </nav>
 
         <main className="main-content" role="main">
-          {activeTab === 'search' ? (
+          {activeTab === 'search' && (
             <>
               <header className="search-header">
                 <h1 className="page-title">Search</h1>
@@ -490,9 +486,11 @@ export default function SpotifySearch() {
               </header>
               <RenderContent />
             </>
-          ) : (
-            <Playlists />
           )}
+
+          {activeTab === 'playlists' && <Playlists />}
+
+          {activeTab === 'visualization' && <VisualizationPage />}
         </main>
       </div>
     </>
