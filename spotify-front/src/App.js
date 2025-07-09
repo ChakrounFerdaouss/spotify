@@ -3,6 +3,7 @@ import Auth from './pages/Auth';
 import Playlists from './pages/Playlists';
 import SpotifySearch from './pages/SpotifySearch'
 import MostRepresentedGenre from './pages/MostRepresentedGenre';
+import ArtistSearch from './pages/ArtistSearch';
 
 function App() {
   return (
@@ -12,6 +13,7 @@ function App() {
         <Route path="/playlists" element={<Playlists />} />
         <Route path="/spotify" element={<SpotifySearch />} />
         <Route path="/most-represented-genre" element={<MostRepresentedGenre />} />
+        <Route path="/rapport" element={<ArtistSearch />} />
       </Routes>
     </Router>
   );

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import Playlists from './Playlists'; // Your playlists component
 import MostRepresentedGenre from './MostRepresentedGenre';
-import { FaSearch, FaMusic, FaChartBar } from 'react-icons/fa';
+import ArtistSearch from './ArtistSearch';
+import { FaSearch, FaMusic, FaChartBar, FaChartLine } from 'react-icons/fa';
 import API from '../api'; // Your API instance
 
 // --- STYLES ---
@@ -475,6 +476,14 @@ export default function SpotifySearch() {
           >
             <FaChartBar />
           </button>
+          <button
+            className={`sidebar-button ${activeTab === 'artist' ? 'active' : ''}`}
+            onClick={() => setActiveTab('artist')}
+            title="Popularité des sons"
+            aria-label="Popularité des sons"
+          >
+            <FaChartLine />
+          </button>
         </nav>
 
         <main className="main-content" role="main">
@@ -499,6 +508,8 @@ export default function SpotifySearch() {
             </>
           ) : activeTab === 'playlists' ? (
             <Playlists />
+          ) : activeTab === 'artist' ? (
+            <ArtistSearch />
           ) : (
             <MostRepresentedGenre />
           )}
