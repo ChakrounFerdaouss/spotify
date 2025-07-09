@@ -1,0 +1,64 @@
+# OS generated files
+.DS_Store
+Thumbs.db
+
+**/package-lock.json
+**/__pycache__
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.env
+*.venv
+venv/
+env/
+ENV/
+.Python
+build/
+dist/
+*.egg-info/
+
+# VSCode
+.vscode/
+
+# Logs
+*.log
+
+# React/Node
+node_modules/
+build/
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Misc
+*.swp
+*.swo
+
+# Ignore local SQLite DBs (if any)
+*.sqlite3
+
+# Ignore coverage reports
+htmlcov/
+.coverage
+coverage.xml
+
+# Ignore test output
+*.pytest_cache/
+
+# Ignore IDE files
+.idea/
+*.iml
+
+# Ignore backup files
+*~
+
+# Ignore package-lock and yarn lock if not used
+# package-lock.json
+yarn.lock
+
+# Ignore Mac system files
+Icon?

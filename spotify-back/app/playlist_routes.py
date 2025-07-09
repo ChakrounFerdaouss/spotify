@@ -122,3 +122,246 @@ def remove_artist(current_user_id, playlist_id, artist_name):
         return jsonify({"removed": result.modified_count, "message": "Artiste supprimé avec succès"})
     except PyMongoError as e:
         return jsonify({"error": "Erreur lors de la suppression de l'artiste", "details": str(e)}), 500
+
+@playlist_bp.route("/playlists/<playlist_id>", methods=["PUT"])
+@token_required
+def update_playlist(current_user_id, playlist_id):
+    data = request.json
+    update = {}
+    if "name" in data:
+        update["name"] = data["name"]
+    if not update:
+        return jsonify({"error": "Aucune donnée à mettre à jour"}), 400
+    try:
+        result = current_app.db.playlists.update_one(
+            {"_id": ObjectId(playlist_id), "user_id": ObjectId(current_user_id)},
+            {"$set": update}
+        )
+        if result.modified_count == 0:
+            return jsonify({"error": "Playlist non trouvée ou rien à modifier"}), 404
+        return jsonify({"message": "Playlist mise à jour"})
+    except PyMongoError as e:
+        return jsonify({"error": "Erreur lors de la mise à jour", "details": str(e)}), 500
+
+@playlist_bp.route("/playlists/<playlist_id>", methods=["DELETE"])
+@token_required
+def delete_playlist(current_user_id, playlist_id):
+    try:
+        result = current_app.db.playlists.delete_one(
+            {"_id": ObjectId(playlist_id), "user_id": ObjectId(current_user_id)}
+        )
+        if result.deleted_count == 0:
+            return jsonify({"error": "Playlist non trouvée"}), 404
+        return jsonify({"message": "Playlist supprimée"})
+    except PyMongoError as e:
+        return jsonify({"error": "Erreur lors de la suppression", "details": str(e)}), 500
+
+@playlist_bp.route("/playlists/<playlist_id>/tracks/<int:index>", methods=["PUT"])
+@token_required
+def update_track(current_user_id, playlist_id, index):
+    data = request.json
+    try:
+        playlist = current_app.db.playlists.find_one(
+            {"_id": ObjectId(playlist_id), "user_id": ObjectId(current_user_id)}
+        )
+        if not playlist:
+            return jsonify({"error": "Playlist non trouvée"}), 404
+        if index >= len(playlist.get("tracks", [])):
+            return jsonify({"error": "Index invalide"}), 400
+        for key in ["title", "artist", "album", "genre", "popularity"]:
+            if key in data:
+                playlist["tracks"][index][key] = data[key]
+        current_app.db.playlists.update_one(
+            {"_id": ObjectId(playlist_id)},
+            {"$set": {"tracks": playlist["tracks"]}}
+        )
+        return jsonify({"message": "Track mis à jour"})
+    except PyMongoError as e:
+        return jsonify({"error": "Erreur lors de la mise à jour du track", "details": str(e)}), 500
+
+@playlist_bp.route("/playlists/<playlist_id>/tracks/<int:index>", methods=["GET"])
+@token_required
+def get_track(current_user_id, playlist_id, index):
+    try:
+        playlist = current_app.db.playlists.find_one(
+            {"_id": ObjectId(playlist_id), "user_id": ObjectId(current_user_id)}
+        )
+        if not playlist:
+            return jsonify({"error": "Playlist non trouvée"}), 404
+        tracks = playlist.get("tracks", [])
+        if index >= len(tracks):
+            return jsonify({"error": "Index invalide"}), 400
+        return jsonify(tracks[index])
+    except PyMongoError as e:
+        return jsonify({"error": "Erreur lors de la récupération du track", "details": str(e)}), 500
+
+@playlist_bp.route("/playlists/<playlist_id>/artists/<int:index>", methods=["PUT"])
+@token_required
+def update_favorite_artist(current_user_id, playlist_id, index):
+    data = request.json
+    try:
+        playlist = current_app.db.playlists.find_one(
+            {"_id": ObjectId(playlist_id), "user_id": ObjectId(current_user_id)}
+        )
+        if not playlist:
+            return jsonify({"error": "Playlist non trouvée"}), 404
+        fav_artists = playlist.get("favorite_artists", [])
+        if index >= len(fav_artists):
+            return jsonify({"error": "Index invalide"}), 400
+        if isinstance(fav_artists[index], dict):
+            fav_artists[index].update(data)
+        else:
+            fav_artists[index] = data.get("artist", fav_artists[index])
+        current_app.db.playlists.update_one(
+            {"_id": ObjectId(playlist_id)},
+            {"$set": {"favorite_artists": fav_artists}}
+        )
+        return jsonify({"message": "Artiste favori mis à jour"})
+    except PyMongoError as e:
+        return jsonify({"error": "Erreur lors de la mise à jour de l'artiste favori", "details": str(e)}), 500
+
+@playlist_bp.route("/playlists/<playlist_id>/artists/<int:index>", methods=["GET"])
+@token_required
+def get_favorite_artist(current_user_id, playlist_id, index):
+    try:
+        playlist = current_app.db.playlists.find_one(
+            {"_id": ObjectId(playlist_id), "user_id": ObjectId(current_user_id)}
+        )
+        if not playlist:
+            return jsonify({"error": "Playlist non trouvée"}), 404
+        fav_artists = playlist.get("favorite_artists", [])
+        if index >= len(fav_artists):
+            return jsonify({"error": "Index invalide"}), 400
+        return jsonify(fav_artists[index])
+    except PyMongoError as e:
+        return jsonify({"error": "Erreur lors de la récupération de l'artiste favori", "details": str(e)}), 500
+
+# --- Aggregations ---
+
+@playlist_bp.route("/playlists/genres/most_represented", methods=["GET"])
+def most_represented_genre():
+    pipeline = [
+        {"$unwind": "$favorite_artists"},
+        {"$unwind": {"path": "$favorite_artists.genre", "preserveNullAndEmptyArrays": True}},
+        {"$group": {"_id": "$favorite_artists.genre", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}},
+        {"$limit": 1}
+    ]
+    result = list(current_app.db.playlists.aggregate(pipeline))
+    if result:
+        return jsonify({"genre": result[0]["_id"], "count": result[0]["count"]})
+    return jsonify({"genre": None, "count": 0})
+
+@playlist_bp.route("/playlists/genres/average_popularity", methods=["GET"])
+def average_popularity_by_genre():
+    pipeline = [
+        {"$unwind": "$favorite_artists"},
+        {"$unwind": {"path": "$favorite_artists.genre", "preserveNullAndEmptyArrays": True}},
+        {"$group": {
+            "_id": "$favorite_artists.genre",
+            "avg_popularity": {"$avg": "$favorite_artists.popularity"}
+        }},
+        {"$sort": {"avg_popularity": -1}}
+    ]
+    result = list(current_app.db.playlists.aggregate(pipeline))
+    return jsonify(result)
+
+@playlist_bp.route("/playlists/genres/total_followers", methods=["GET"])
+def total_followers_by_genre():
+    pipeline = [
+        {"$unwind": "$favorite_artists"},
+        {"$unwind": {"path": "$favorite_artists.genre", "preserveNullAndEmptyArrays": True}},
+        {"$group": {
+            "_id": "$favorite_artists.genre",
+            "total_followers": {"$sum": "$favorite_artists.followers"}
+        }},
+        {"$sort": {"total_followers": -1}}
+    ]
+    result = list(current_app.db.playlists.aggregate(pipeline))
+    return jsonify(result)
+
+@playlist_bp.route("/playlists/artists/most_popular", methods=["GET"])
+def most_popular_artist():
+    pipeline = [
+        {"$unwind": "$favorite_artists"},
+        {"$sort": {"favorite_artists.popularity": -1}},
+        {"$limit": 1},
+        {"$project": {"artist": "$favorite_artists", "_id": 0}}
+    ]
+    result = list(current_app.db.playlists.aggregate(pipeline))
+    return jsonify(result[0]["artist"] if result else {})
+
+@playlist_bp.route("/playlists/tracks/most_popular", methods=["GET"])
+def most_popular_track():
+    pipeline = [
+        {"$unwind": "$tracks"},
+        {"$sort": {"tracks.popularity": -1}},
+        {"$limit": 1},
+        {"$project": {"track": "$tracks", "_id": 0}}
+    ]
+    result = list(current_app.db.playlists.aggregate(pipeline))
+    return jsonify(result[0]["track"] if result else {})
+
+@playlist_bp.route("/playlists/count_per_user", methods=["GET"])
+def playlists_per_user():
+    pipeline = [
+        {"$group": {"_id": "$user_id", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}}
+    ]
+    result = list(current_app.db.playlists.aggregate(pipeline))
+    return jsonify(result)
+
+@playlist_bp.route("/playlists/artists/top", methods=["GET"])
+def top_artists():
+    n = int(request.args.get("n", 5))
+    pipeline = [
+        {"$unwind": "$favorite_artists"},
+        {"$sort": {"favorite_artists.popularity": -1}},
+        {"$limit": n},
+        {"$project": {"artist": "$favorite_artists", "_id": 0}}
+    ]
+    result = list(current_app.db.playlists.aggregate(pipeline))
+    return jsonify([r["artist"] for r in result])
+
+@playlist_bp.route("/playlists/tracks/top", methods=["GET"])
+def top_tracks():
+    n = int(request.args.get("n", 5))
+    pipeline = [
+        {"$unwind": "$tracks"},
+        {"$sort": {"tracks.popularity": -1}},
+        {"$limit": n},
+        {"$project": {"track": "$tracks", "_id": 0}}
+    ]
+    result = list(current_app.db.playlists.aggregate(pipeline))
+    return jsonify([r["track"] for r in result])
+
+@playlist_bp.route("/playlists/genres/distribution", methods=["GET"])
+def genre_distribution():
+    pipeline = [
+        {"$unwind": "$favorite_artists"},
+        {"$unwind": {"path": "$favorite_artists.genre", "preserveNullAndEmptyArrays": True}},
+        {"$group": {"_id": "$favorite_artists.genre", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}}
+    ]
+    result = list(current_app.db.playlists.aggregate(pipeline))
+    return jsonify(result)
+
+@playlist_bp.route("/playlists/most_tracks", methods=["GET"])
+def playlist_with_most_tracks():
+    pipeline = [
+        {"$project": {"name": 1, "track_count": {"$size": "$tracks"}}},
+        {"$sort": {"track_count": -1}},
+        {"$limit": 1}
+    ]
+    result = list(current_app.db.playlists.aggregate(pipeline))
+    return jsonify(result[0] if result else {})
+
+@playlist_bp.route("/playlists/most_favorite_artists", methods=["GET"])
+def playlist_with_most_favorite_artists():
+    pipeline = [
+        {"$project": {"name": 1, "fav_artist_count": {"$size": "$favorite_artists"}}},
+        {"$sort": {"fav_artist_count": -1}},
+        {"$limit": 1}
+    ]
+    result = list(current_app.db.playlists.aggregate(pipeline))
+    return jsonify(result[0] if result else {})

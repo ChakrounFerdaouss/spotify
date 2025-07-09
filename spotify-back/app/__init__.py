@@ -12,4 +12,8 @@ def create_app():
     app.register_blueprint(auth_bp)
     app.register_blueprint(playlist_bp)
     app.register_blueprint(spotify_bp, url_prefix="/spotify")
+    # Root route for health check
+    @app.route("/")
+    def index():
+        return "Spotify API is running"
     return app
