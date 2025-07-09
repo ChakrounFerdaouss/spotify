@@ -4,7 +4,6 @@ from .database import init_db
 from .auth_routes import auth_bp
 from .playlist_routes import playlist_bp
 from .spotify_routes import spotify_bp
-from .reports_routes import reports_bp
 
 def create_app():
     app = Flask(__name__)
@@ -33,5 +32,5 @@ def create_app():
     app.register_blueprint(auth_bp, url_prefix="/auth")
     app.register_blueprint(playlist_bp)
     app.register_blueprint(spotify_bp, url_prefix="/spotify")
-    app.register_blueprint(reports_bp, url_prefix="/reports")
+
     return app

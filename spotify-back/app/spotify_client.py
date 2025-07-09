@@ -19,3 +19,12 @@ class SpotifyClient:
     def search_track(self, name, limit=10):
         results = self.sp.search(q=name, type="track", limit=limit)
         return results.get("tracks", {}).get("items", [])
+    
+    def get_raw_client(self):  
+        return self.sp
+    
+    def get_artist_top_tracks(self, artist_id):
+        results = self.sp.artist_top_tracks(artist_id)
+        return results.get('tracks', [])
+    
+
