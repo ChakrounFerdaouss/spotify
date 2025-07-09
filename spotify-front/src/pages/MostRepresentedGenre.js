@@ -1,33 +1,68 @@
 import React, { useEffect, useState } from 'react';
-// import axios from '../api'; // Uncomment and adjust if you have an API endpoint
+import { Bar } from 'react-chartjs-2';
+import { Chart, BarElement, CategoryScale, LinearScale, Tooltip, Legend } from 'chart.js';
+import API from '../api';
+import './MostRepresentedGenre.css';
+
+Chart.register(BarElement, CategoryScale, LinearScale, Tooltip, Legend);
+
+const genreColors = [
+  '#4e79a7', '#f28e2b', '#e15759', '#76b7b2', '#59a14f', '#edc949', '#af7aa1', '#ff9da7', '#9c755f', '#bab0ab'
+];
 
 const MostRepresentedGenre = () => {
-  const [genre, setGenre] = useState('');
-  const [count, setCount] = useState(0);
-  // const [loading, setLoading] = useState(true);
+  const [genreData, setGenreData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    // Example fetch logic (replace with your real API call)
-    // axios.get('/api/most-represented-genre').then(res => {
-    //   setGenre(res.data.genre);
-    //   setCount(res.data.count);
-    //   setLoading(false);
-    // });
-    // Mocked data for now:
-    setGenre('Pop');
-    setCount(42);
-    // setLoading(false);
+    // Fetch genre distribution from backend
+    API.get('/reports/genre-distribution')
+      .then(res => {
+        setGenreData(res.data);
+        setLoading(false);
+      })
+      .catch(() => {
+        setError("Erreur lors du chargement des données.");
+        setLoading(false);
+      });
   }, []);
 
+  const data = {
+    labels: genreData.map(g => g.genre),
+    datasets: [
+      {
+        label: "Nombre d'artistes",
+        data: genreData.map(g => g.count),
+        backgroundColor: genreColors,
+      },
+    ],
+  };
+
+  const options = {
+    responsive: true,
+    plugins: {
+      legend: { display: false },
+      tooltip: { enabled: true },
+    },
+    scales: {
+      y: { beginAtZero: true, ticks: { color: '#222', font: { size: 16 } } },
+      x: { ticks: { color: '#222', font: { size: 16 } } },
+    },
+  };
+
   return (
-    <div style={{ padding: '2rem', textAlign: 'center' }}>
-      <h1>Quel est le genre musical le plus représenté parmi les artistes ?</h1>
-      {/* {loading ? <p>Chargement...</p> : ( */}
-        <div style={{ marginTop: '2rem', fontSize: '1.5rem' }}>
-          <strong>Genre le plus représenté :</strong> {genre} <br />
-          <strong>Nombre d'artistes :</strong> {count}
+    <div className="dashboard-container">
+      <h2 className="dashboard-title">Quel est le genre musical le plus représenté parmi les artistes ?</h2>
+      {loading ? (
+        <div className="dashboard-loading">Chargement...</div>
+      ) : error ? (
+        <div className="dashboard-error">{error}</div>
+      ) : (
+        <div className="dashboard-chart">
+          <Bar data={data} options={options} />
         </div>
-      {/* )} */}
+      )}
     </div>
   );
 };

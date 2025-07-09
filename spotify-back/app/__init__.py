@@ -33,6 +33,7 @@ def create_app():
     app.register_blueprint(auth_bp, url_prefix="/auth")
     app.register_blueprint(playlist_bp)
     app.register_blueprint(spotify_bp, url_prefix="/spotify")
+    app.register_blueprint(reports_bp, url_prefix="/reports")
     # Root route for health check
     @app.route("/")
     def index():

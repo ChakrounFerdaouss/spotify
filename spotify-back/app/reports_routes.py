@@ -59,7 +59,6 @@ def genre_distribution(current_user_id):
         pipeline = [
             {"$match": {"user_id": ObjectId(current_user_id)}},
             {"$unwind": "$tracks"},
-            {"$unwind": "$tracks.genre"},
             {"$group": {
                 "_id": "$tracks.genre",
                 "count": {"$sum": 1}
@@ -69,9 +68,9 @@ def genre_distribution(current_user_id):
 
         result = list(current_app.db.playlists.aggregate(pipeline))
 
-        genre_dist = [{"genre": r["_id"], "count": r["count"]} for r in result if r["_id"]]
+        genre_data = [{"genre": r["_id"], "count": r["count"]} for r in result if r["_id"]]
 
-        return jsonify(genre_dist)
+        return jsonify(genre_data)
     except PyMongoError as e:
         print("Erreur lors de l'agrégation genre distribution:", e)
-        return jsonify({"error": "Erreur lors de l'agrégation", "details": str(e)}), 500
+        return jsonify({"error": "Erreur lors de l'agrégation des genres."}), 500
