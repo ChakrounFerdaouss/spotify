@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # OS generated files
 .DS_Store
 Thumbs.db
@@ -62,3 +63,12 @@ yarn.lock
 
 # Ignore Mac system files
 Icon?
+=======
+# Node modules
+node_modules/
+
+
+# Env files
+.env
+
+>>>>>>> d942099b957054b52d30de11ffa6bc8f5b32ac10
