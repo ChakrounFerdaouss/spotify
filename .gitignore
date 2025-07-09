@@ -57,7 +57,7 @@ coverage.xml
 *~
 
 # Ignore package-lock and yarn lock if not used
-# package-lock.json
+*/package-lock.json
 yarn.lock
 
 # Ignore Mac system files
