@@ -213,7 +213,6 @@ export default function SpotifySearch() {
   const [hasSearched, setHasSearched] = useState(false);
 
   // Playlists and selected playlist id
-  const [playlists, setPlaylists] = useState([]);
   const [defaultPlaylistId, setDefaultPlaylistId] = useState(null);
 
   const BACKEND_URL = 'http://127.0.0.1:5000';
@@ -227,7 +226,6 @@ export default function SpotifySearch() {
         const res = await API.get('/playlists', {
           headers: { Authorization: `Bearer ${token}` }
         });
-        setPlaylists(res.data);
         if (res.data.length > 0) setDefaultPlaylistId(res.data[0]._id);
       } catch (err) {
         console.error('Failed to fetch playlists', err);

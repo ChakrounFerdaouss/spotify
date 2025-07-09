@@ -167,7 +167,7 @@ export default function Playlists() {
   useEffect(() => {
     if (token) fetchPlaylists();
     else alert('Connecte-toi d’abord !');
-  }, [token]);
+  }, [token, fetchPlaylists]);
 
   async function fetchPlaylists() {
     try {
