@@ -1,9 +1,8 @@
-from flask import Blueprint, jsonify, current_app
+from flask import Blueprint, jsonify, current_app, request
 from bson import ObjectId
 from flask_cors import cross_origin
 from pymongo.errors import PyMongoError
 from functools import wraps
-from flask import request
 import jwt
 import os
 
@@ -26,7 +25,7 @@ def token_required(f):
         return f(current_user_id, *args, **kwargs)
     return decorated
 
-@reports_bp.route("/top-artists", methods=["GET"])  # <-- juste /top-artists
+@reports_bp.route("/top-artists", methods=["GET"])
 @token_required
 @cross_origin()
 def top_artists(current_user_id):
@@ -43,15 +42,14 @@ def top_artists(current_user_id):
         ]
 
         result = list(current_app.db.playlists.aggregate(pipeline))
-        
         top_artists = [{"artist": r["_id"], "count": r["count"]} for r in result]
 
         return jsonify(top_artists)
     except PyMongoError as e:
         print("Erreur lors de l'agrégation top artists:", e)
         return jsonify({"error": "Erreur lors de l'agrégation", "details": str(e)}), 500
-    
-@reports_bp.route("/genre-distribution", methods=["GET"])  # <-- juste /genre-distribution
+
+@reports_bp.route("/genre-distribution", methods=["GET"])
 @token_required
 @cross_origin()
 def genre_distribution(current_user_id):
@@ -68,10 +66,36 @@ def genre_distribution(current_user_id):
         ]
 
         result = list(current_app.db.playlists.aggregate(pipeline))
-
         genre_dist = [{"genre": r["_id"], "count": r["count"]} for r in result if r["_id"]]
 
         return jsonify(genre_dist)
     except PyMongoError as e:
         print("Erreur lors de l'agrégation genre distribution:", e)
         return jsonify({"error": "Erreur lors de l'agrégation", "details": str(e)}), 500
+
+@reports_bp.route("/top-artists-chart", methods=["GET"])
+@token_required
+@cross_origin()
+def top_artists_chart(current_user_id):
+    try:
+        pipeline = [
+            {"$match": {"user_id": ObjectId(current_user_id)}},
+            {"$unwind": "$tracks"},
+            {"$group": {
+                "_id": "$tracks.artist",
+                "totalPlays": {"$sum": 1}  # Count each track as one play
+            }},
+            {"$sort": {"totalPlays": -1}},
+            {"$limit": 5}
+        ]
+
+        result = list(current_app.db.playlists.aggregate(pipeline))
+
+        return jsonify({
+            "labels": [r["_id"] for r in result],
+            "data": [r["totalPlays"] for r in result]
+        })
+
+    except Exception as e:
+        print("Erreur dans /top-artists-chart:", e)
+        return jsonify({"error": "Erreur lors de l'agrégation"}), 500
